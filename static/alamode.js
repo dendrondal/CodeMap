@@ -2468,8 +2468,8 @@ var alamode = {
 
     var id = alamode.makeId(10);
 
-    var nodeQuery = o["node_query"],
-        edgeQuery = o["edge_query"],
+    var nodes = o["nodes"],
+        links = o["links"],
         isNumeric = o["groups_are_numeric"],
         htmlElement = o["html_element"] || "body",
         title = o["title"] || queryName,
@@ -2479,9 +2479,6 @@ var alamode = {
 
     var outerRadius = Math.min(width,height)/2 - 30,
         innerRadius = outerRadius * .2;
-
-    var nodes = alamode.getDataFromQuery(nodeQuery),
-        links = alamode.getDataFromQuery(edgeQuery);
 
     var groups = _.uniq(_.map(nodes,"node_group"))
 

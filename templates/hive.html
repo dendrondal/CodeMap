@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<link rel="stylesheet" href="../static/alamode.min.css">
+<script src="../static/alamode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-tip/0.6.7/d3-tip.min.js"></script>
+
+<div id="hive"></div>
+<script>
+
+alamode.hive(
+    {
+        "nodes": {{ data.nodes|tojson }},
+        "links": {{ data.links|tojson }},
+        "groups_are_numeric": false,
+        "html_element": "#hive",
+        "title": {{ data.title|tojson }},
+        "chart_width": 1000,
+        "chart_height": 1000,
+        "group_colors": {{ data.colors|tojson }}
+    }
+)
+
+</script>
