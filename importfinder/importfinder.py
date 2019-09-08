@@ -2,7 +2,7 @@ from pathlib import Path
 from collections import namedtuple
 import tokenize
 from typing import List, Dict, Type
-
+#TODO: Make sure that venvs are not visited
 
 def get_all_py_files() -> List[Path]:
     """Recursively walks down cwd, finds all .py files"""
@@ -21,6 +21,7 @@ def enumerate_imports(tokens: List[namedtuple], local_pkgs: List[str]):
 
     **Note:** This is intelligent about the use of the 'as' keyword.
     TODO: Account for imports in parentheses
+    TODO: Account for multiple periods
     """
     imported_modules = []
     import_line = False
@@ -34,35 +35,49 @@ def enumerate_imports(tokens: List[namedtuple], local_pkgs: List[str]):
             if tok.type == tokenize.NAME and next_tok.string != 'as':
                 if next_tok.string not in imported_modules:
                     if next_tok.string in local_pkgs:
+                        print('added import')
                         imported_modules.append(next_tok.string)
                     if next_tok.string == '.':
+                        print('added import')
                         imported_modules.append(tokens[index+2].string)
 
     return imported_modules
 
 
-def get_all_packages(file_list: List[Path]) -> List[str]:
+def get_all_packages() -> List[Path]:
     """Finds all __init__.py, returns parent modules"""
     packages = []
-    for file in file_list:
-        if file.name == '__init__.py':
-            packages.append(file.parent.name())
+    for result in Path.cwd().glob('**/__init__.py'):
+        packages.append(result.parent)
     return packages
 
 
-def get_all_modules(file_list: List[Path]) -> List[str]:
+def get_all_modules(pkgs: List[Path]) -> Dict[str, List[Path]]:
     """Finds all non-init .py files, removes extensions"""
-    modules = []
-    for file in file_list:
-        if file.name is not '__init__.py':
-            modules.append(file.stem)
+    modules = dict()
+    for pkg in pkgs:
+        modules[pkg.name] = list(pkg.glob('*.py'))
     return modules
 
 
-def main(packages, modules, imports):
+def get_imports(modules: Dict[str, List[Path]]) -> List[namedtuple]:
+    links = []
+    link = namedtuple('link', 'package module import_statement')
+    for pkg, mods in modules.items():
+        for mod in mods:
+            for statement in enumerate_imports(tokenizer(mod),
+                                               list(modules.keys())):
+                links.append(link._make([pkg, mod.stem, statement]))
+    return links
+
+
+def main():
+    packages = get_all_packages()
+    assert len(packages) > 0, "No packages found, double-check directory"
+    modules = get_all_modules(packages)
+    return get_imports(modules)
+
 
 if __name__ == '__main__':
-    pyfile = Path.cwd()/'janitor'/'chemistry.py'
-    tokens = listified_tokenizer(str(pyfile))
-    print(tokens)
-    print(enumerate_imports(tokens))
+    print(main())
+
