@@ -3,6 +3,7 @@ from collections import namedtuple, defaultdict
 import tokenize
 from typing import List, Dict, Type
 import networkx as nx
+import ast
 #TODO: Make sure that venvs are not visited
 
 def get_all_py_files() -> List[Path]:
@@ -46,14 +47,13 @@ def enumerate_imports(tokens: List[namedtuple], local_pkgs: List[str]):
 
 
 class ImportGraph(object):
+
     def __init__(self):
         self.G = nx.Graph()
         self.directory = Path.cwd()
-        self.primary_patterns = [r"(from )(.*)( import )(.*)",
-                                 r"(import )(.*)"]
-        self.secondary_patterns = [[r"\.+", r"\.+\w*"]
+        self.local_libs = set(self.packages + self.modules)
+        self.Import = namedtuple('Import', 'module name')
 
-        ]
     @property
     def _package_paths(self) -> List[Path]:
         """Finds all __init__.py, returns parent modules"""
@@ -68,6 +68,14 @@ class ImportGraph(object):
         return [pkg.name for pkg in self._package_paths]
 
     @property
+    def _module_paths(self) -> List[Path]:
+        module_paths = []
+        for pkg in self._package_paths:
+            for mod in pkg.glob('*.py'):
+                module_paths.append(mod)
+        return module_paths
+
+    @property
     def modules(self) -> List[str]:
         """Finds all non-init .py files, removes extensions"""
         modules = []
@@ -77,12 +85,45 @@ class ImportGraph(object):
                 self.G.add_node(mod.stem, package=pkg.name)
         return modules
 
-    @property
-    def links
+    def _get_imports(self, py_file):
+        """Finds all local imports within a python file, writes them to graph"""
+        with open(py_file) as f:
+            root = ast.parse(f.read(), py_file)
+
+        for node in ast.iter_child_nodes(root):
+            if isinstance(node, ast.Import):
+                module = node.module.split('.')
+                intersect = set(module) & self.local_libs
+                if intersect:
+                    e = [(py_file.name, i) for i in intersect]
+                    self.G.add_edges_from(*e)
+
+            elif isinstance(node, ast.ImportFrom):
+                module = node.module.split('.')
+                intersect = set(module) & self.local_libs
+                if intersect:
+                    e = [(py_file.name, i) for i in intersect]
+                    self.G.add_edges_from(*e)
+            else:
+                continue
+
+            for n in node.names:
+                name = n.name.split('.')
+                intersect = set(name) & self.local_libs
+                if intersect:
+                    e = [(py_file.name, i) for i in intersect]
+                    self.G.add_edges_from(*e)
+
+    def _construct_graph(self):
+        for py_file in self._module_paths:
+            self._get_imports(py_file)
+
+    def output_graph(self):
+        return nx.to_dict_of_dicts(self.G)
 
 def get_imports(modules: Dict[str, List[Path]]) -> List[namedtuple]:
     links = []
-    link = namedtuple('link', 'package module import_statement')
+
     for pkg, mods in modules.items():
         for mod in mods:
             for statement in enumerate_imports(tokenizer(mod),
