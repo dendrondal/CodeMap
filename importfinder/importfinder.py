@@ -1,7 +1,8 @@
 from pathlib import Path
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 import tokenize
 from typing import List, Dict, Type
+import networkx as nx
 #TODO: Make sure that venvs are not visited
 
 def get_all_py_files() -> List[Path]:
@@ -18,7 +19,7 @@ def tokenizer(filepath: Path) -> List[namedtuple]:
 def enumerate_imports(tokens: List[namedtuple], local_pkgs: List[str]):
     """
     Iterates over *tokens* and returns a list of all imported modules.
-
+    Since only local imports are being analyzed, try/except logic is excluded
     **Note:** This is intelligent about the use of the 'as' keyword.
     TODO: Account for imports in parentheses
     TODO: Account for multiple periods
@@ -44,21 +45,40 @@ def enumerate_imports(tokens: List[namedtuple], local_pkgs: List[str]):
     return imported_modules
 
 
-def get_all_packages() -> List[Path]:
-    """Finds all __init__.py, returns parent modules"""
-    packages = []
-    for result in Path.cwd().glob('**/__init__.py'):
-        packages.append(result.parent)
-    return packages
+class ImportGraph(object):
+    def __init__(self):
+        self.G = nx.Graph()
+        self.directory = Path.cwd()
+        self.primary_patterns = [r"(from )(.*)( import )(.*)",
+                                 r"(import )(.*)"]
+        self.secondary_patterns = [[r"\.+", r"\.+\w*"]
 
+        ]
+    @property
+    def _package_paths(self) -> List[Path]:
+        """Finds all __init__.py, returns parent modules"""
+        packages = []
+        for result in self.directory.glob('**/__init__.py'):
+            packages.append(result.parent)
+        return packages
 
-def get_all_modules(pkgs: List[Path]) -> Dict[str, List[Path]]:
-    """Finds all non-init .py files, removes extensions"""
-    modules = dict()
-    for pkg in pkgs:
-        modules[pkg.name] = list(pkg.glob('*.py'))
-    return modules
+    @property
+    def packages(self) -> List[str]:
+        """Helper function to convert posixpaths to string"""
+        return [pkg.name for pkg in self._package_paths]
 
+    @property
+    def modules(self) -> List[str]:
+        """Finds all non-init .py files, removes extensions"""
+        modules = []
+        for pkg in self._package_paths:
+            for mod in pkg.glob('*.py'):
+                modules.append(mod.stem)
+                self.G.add_node(mod.stem, package=pkg.name)
+        return modules
+
+    @property
+    def links
 
 def get_imports(modules: Dict[str, List[Path]]) -> List[namedtuple]:
     links = []
