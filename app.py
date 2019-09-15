@@ -1,5 +1,6 @@
 from flask import Flask, request, render_template
 from importfinder import ImportGraph
+from pathlib import Path
 
 app = Flask(__name__)
 
@@ -9,8 +10,10 @@ def hello_world():
     return 'Hello World!'
 
 
-@app.route('/{package}'):
-def hive_plot(package):
-    
+@app.route('/hive')
+def hive_plot():
+    data = ImportGraph(directory=Path('/home/dal/PycharmProjects/pyjanitor_fork')).output_graph()
+    return render_template('hive.html', graph_data=data)
+
 if __name__ == '__main__':
     app.run()
