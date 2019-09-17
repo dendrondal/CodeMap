@@ -78,17 +78,20 @@ class ImportGraph(object):
 
     def output_graph(self):
         self._construct_graph()
-        nodes, links, parents = [], [], []
+        graph_data = {'nodes': [], 'links': []}
         for node in self.G.nodes(data=True):
-            for edge in self.G[node[0]]:
+            for edge in self.G.edges():
+                print(node[1], edge)
                 try:
-                    nodes.append(node[0])
-                    links.append(edge)
-                    parents.append(node[1]['package'])
+                    graph_data['nodes'].append({'name': node[0],
+                                                'group': node[1]['package']})
+                    graph_data['links'].append({'source': edge[0],
+                                                'target': edge[1]})
                 except KeyError:
                     #takes care of base module imports
                     pass
-        return nodes, links, parents
+        print(graph_data)
+        return graph_data
 
 
 
@@ -96,6 +99,6 @@ if __name__ == '__main__':
     test = ImportGraph(directory=Path('/home/dal/PycharmProjects/pyjanitor_fork')).output_graph()
     env = Environment(loader=FileSystemLoader('../templates'))
     template = env.get_template('hive.html')
-    output = template.render(nodes=test[0], links=test[1], parents=test[2])
+    output = template.render(nodes=test['nodes'], links=test['links'])
     with open('test_graph.html', 'w') as f:
         f.write(output)
