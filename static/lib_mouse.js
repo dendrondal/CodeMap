@@ -143,7 +143,7 @@ var setup_mouse = function(plot_info) {
 
     var node_ib  = function(curr_node) {
       var curr_name   = curr_node.node.name;
-      var orig_name   = orig_node.node.name;
+      var orig_name   = orig_node.schemeCategory10node.name;
       var curr_tgts   = g.targets[curr_name];
       var result      = false;
 

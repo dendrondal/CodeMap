@@ -13,12 +13,12 @@ var setup_plot = function(plot_info) {
     g.angle_rng.push(axis_info.angle);
   }
 
-  g.angle_f     = d3.scale.ordinal().domain(g.angle_dom).range(g.angle_rng);
+  g.angle_f     = d3.scaleOrdinal().domain(g.angle_dom).range(g.angle_rng);
 
   var radii     = [ g.inner_radius, g.outer_radius ]
-  g.radius_f    = d3.scale.linear().range(radii);
+  g.radius_f    = d3.scaleLinear().range(radii);
 
-  g.color_f     = d3.scale.category10();
+  g.color_f     = d3.scaleOrdinal(d3.schemeCategory10);
 
   g.transform   = 'translate(' + g.x_off + ',' + g.y_off + ')';
 
