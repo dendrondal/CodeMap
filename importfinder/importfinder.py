@@ -36,7 +36,8 @@ class ImportGraph(object):
         module_paths = []
         for pkg in self._package_paths:
             for mod in pkg.glob('*.py'):
-                module_paths.append(mod)
+                if not str(mod).startswith('__init__'):
+                    module_paths.append(mod)
         return module_paths
 
     @property
@@ -45,8 +46,9 @@ class ImportGraph(object):
         modules = []
         for pkg in self._package_paths:
             for mod in pkg.glob('*.py'):
-                modules.append(mod.stem)
-                self.G.add_node(mod.stem, package=pkg.name)
+                if not str(mod).startswith('__init__'):
+                    modules.append(mod.stem)
+                    self.G.add_node(mod.stem, package=pkg.name)
         return modules
 
     def _get_imports(self, py_file):
@@ -57,6 +59,10 @@ class ImportGraph(object):
         for node in ast.iter_child_nodes(root):
             if isinstance(node, ast.Import):
                 continue
+
+            elif isinstance(node, ast.ImportFrom) and node.module is None:
+                node.visit()
+
 
             elif isinstance(node, ast.ImportFrom):
                 module = node.module.split('.')
